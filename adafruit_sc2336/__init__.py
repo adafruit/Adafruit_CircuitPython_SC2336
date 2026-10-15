@@ -195,17 +195,37 @@ class SC2336:
 
     @property
     def width(self):
-        """The width of the frames the sensor transmits, in pixels. Read back
-        from the sensor's output window, so window changes are reflected.
-        (read-only)"""
+        """The width of the frames the sensor transmits, in pixels. Writing
+        trims the output window of the current mode to this size (read back
+        from the window, so it reflects any change). The sensor must be in
+        standby to change it."""
         return (self._read_byte(0x3208) << 8) | self._read_byte(0x3209)
+
+    @width.setter
+    def width(self, width):
+        if self._streaming:
+            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        if not 0 < width < (1 << 16):
+            raise ValueError("Invalid width")
+        self._write_byte(0x3208, width >> 8)
+        self._write_byte(0x3209, width & 0xFF)
 
     @property
     def height(self):
-        """The height of the frames the sensor transmits, in lines. Read back
-        from the sensor's output window, so window changes are reflected.
-        (read-only)"""
+        """The height of the frames the sensor transmits, in lines. Writing
+        trims the output window of the current mode to this size (read back
+        from the window, so it reflects any change). The sensor must be in
+        standby to change it."""
         return (self._read_byte(0x320A) << 8) | self._read_byte(0x320B)
+
+    @height.setter
+    def height(self, height):
+        if self._streaming:
+            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        if not 0 < height < (1 << 16):
+            raise ValueError("Invalid height")
+        self._write_byte(0x320A, height >> 8)
+        self._write_byte(0x320B, height & 0xFF)
 
     @property
     def frame_rate(self):

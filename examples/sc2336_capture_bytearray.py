@@ -98,12 +98,9 @@ display = framebufferio.FramebufferDisplay(fb_display)
 i2c = board.I2C()
 sensor = SC2336(i2c)
 sensor.mode = Mode.VGA_640x480_RAW10_50FPS
-# Trim the sensor's output window to a 320x240 window; width and height read
-# back from this window.
-sensor._write_byte(0x3208, 0x01)
-sensor._write_byte(0x3209, 0x40)  # output width = 320
-sensor._write_byte(0x320A, 0x00)
-sensor._write_byte(0x320B, 0xF0)  # output height = 240
+# Trim the sensor's output window to a 320x240 window.
+sensor.width = 320
+sensor.height = 240
 
 # output_format=RGB565 makes the ISP convert the sensor's RAW10 frames to
 # RGB565 as they are captured, matching the panel's framebuffer format.

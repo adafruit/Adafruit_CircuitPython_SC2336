@@ -94,12 +94,9 @@ i2c = board.I2C()
 sensor = SC2336(i2c)
 sensor.mode = Mode.HD_1280x720_RAW10_30FPS
 # Trim the sensor's output window to the panel size: the camera DMA's whole
-# frames, so the destination must fit. width and height read back from this
-# window.
-sensor._write_byte(0x3208, 0x04)
-sensor._write_byte(0x3209, 0x00)  # output width = 1024
-sensor._write_byte(0x320A, 0x02)
-sensor._write_byte(0x320B, 0x58)  # output height = 600
+# frames, so the destination must fit.
+sensor.width = 1024
+sensor.height = 600
 
 # output_format=RGB565 makes the ISP convert the sensor's RAW10 frames to
 # RGB565 as they are captured, matching the panel's framebuffer format.

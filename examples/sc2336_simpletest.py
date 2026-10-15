@@ -47,4 +47,5 @@ while True:
             b = pixel & 0x1F
             line += SHADES[(2 * r + 5 * g + b) * (len(SHADES) - 1) // (2 * 31 + 5 * 63 + 31)]
         print(line)
+    print()
     time.sleep(1)
