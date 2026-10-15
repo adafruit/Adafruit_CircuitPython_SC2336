@@ -843,13 +843,21 @@ MODE4_REGS = (
     (0x37F9, 0x53),
 )
 
-# (regs, width, height, frame_rate, bits_per_pixel, lane_bit_rate_mbps, data_lanes)
+# (regs, width, height, frame_rate, bits_per_pixel, lane_bit_rate_mbps,
+# data_lanes, readout_width, readout_height)
+#
+# The readout window (last two fields) is the sensor's analog window,
+# computed from the window start/stop registers 0x3200-0x3207 in the mode
+# table (stop - start + 1). Output window trimming (0x3208-0x320b) and the
+# crop offset (0x3210-0x3213) must stay within it. The FHD mode table
+# leaves the window registers at their reset values, which read out the
+# full 1920x1080 array.
 MODES = (
-    (MODE0_REGS, 800, 800, 30, 8, 336, 2),
-    (MODE1_REGS, 640, 480, 50, 10, 210, 2),
-    (MODE2_REGS, 1280, 720, 30, 10, 405, 2),
-    (MODE3_REGS, 1280, 720, 50, 10, 405, 2),
-    (MODE4_REGS, 1920, 1080, 30, 10, 405, 2),
+    (MODE0_REGS, 800, 800, 30, 8, 336, 2, 832, 808),
+    (MODE1_REGS, 640, 480, 50, 10, 210, 2, 672, 488),
+    (MODE2_REGS, 1280, 720, 30, 10, 405, 2, 1312, 728),
+    (MODE3_REGS, 1280, 720, 50, 10, 405, 2, 1312, 728),
+    (MODE4_REGS, 1920, 1080, 30, 10, 405, 2, 1920, 1080),
 )
 
 # (fine, coarse, analog) register triples for each gain step.

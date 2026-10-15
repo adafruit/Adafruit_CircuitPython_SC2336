@@ -51,6 +51,10 @@ _REG_ANG_GAIN = const(0x3E09)
 _REG_FLIP_MIRROR = const(0x3221)
 _REG_TEST_PATTERN = const(0x4501)
 _REG_TOTAL_HEIGHT = const(0x320E)  # 2 bytes, VTS: lines per frame incl. blanking
+_REG_OUT_WIDTH = const(0x3208)  # 2 bytes, output frame width
+_REG_OUT_HEIGHT = const(0x320A)  # 2 bytes, output frame height
+_REG_OUT_START_X = const(0x3210)  # 2 bytes, output X start (crop offset)
+_REG_OUT_START_Y = const(0x3212)  # 2 bytes, output Y start (crop offset)
 
 _EXPOSURE_MIN = const(0x08)
 _EXPOSURE_MAX_OFFSET_LINES = const(6)
@@ -195,37 +199,93 @@ class SC2336:
 
     @property
     def width(self):
-        """The width of the frames the sensor transmits, in pixels. Writing
-        trims the output window of the current mode to this size (read back
-        from the window, so it reflects any change). The sensor must be in
-        standby to change it."""
-        return (self._read_byte(0x3208) << 8) | self._read_byte(0x3209)
+        """The width of the frames the sensor transmits, in pixels (read back
+        from the sensor's output window, so window changes are reflected).
+        Writing trims the output window of the current mode to this size. It
+        must be an even number of pixels and, with `crop_x`, stay within the
+        mode's readout window. The sensor must be in standby to change it."""
+        return (self._read_byte(_REG_OUT_WIDTH) << 8) | self._read_byte(_REG_OUT_WIDTH + 1)
 
     @width.setter
     def width(self, width):
         if self._streaming:
             raise RuntimeError("sensor is streaming; stop or standby before changing mode")
-        if not 0 < width < (1 << 16):
-            raise ValueError("Invalid width")
-        self._write_byte(0x3208, width >> 8)
-        self._write_byte(0x3209, width & 0xFF)
+        window_width = MODES[self._mode][7]
+        if not 0 < width <= window_width or width % 2 != 0 or self.crop_x + width > window_width:
+            raise ValueError(
+                "width must be an even number of pixels with crop_x + width within "
+                f"the mode's {window_width} pixel readout window"
+            )
+        self._write_byte(_REG_OUT_WIDTH, width >> 8)
+        self._write_byte(_REG_OUT_WIDTH + 1, width & 0xFF)
 
     @property
     def height(self):
-        """The height of the frames the sensor transmits, in lines. Writing
-        trims the output window of the current mode to this size (read back
-        from the window, so it reflects any change). The sensor must be in
-        standby to change it."""
-        return (self._read_byte(0x320A) << 8) | self._read_byte(0x320B)
+        """The height of the frames the sensor transmits, in lines (read back
+        from the sensor's output window, so window changes are reflected).
+        Writing trims the output window of the current mode to this size. It
+        must be an even number of lines and, with `crop_y`, stay within the
+        mode's readout window. The sensor must be in standby to change it."""
+        return (self._read_byte(_REG_OUT_HEIGHT) << 8) | self._read_byte(_REG_OUT_HEIGHT + 1)
 
     @height.setter
     def height(self, height):
         if self._streaming:
             raise RuntimeError("sensor is streaming; stop or standby before changing mode")
-        if not 0 < height < (1 << 16):
-            raise ValueError("Invalid height")
-        self._write_byte(0x320A, height >> 8)
-        self._write_byte(0x320B, height & 0xFF)
+        window_height = MODES[self._mode][8]
+        if (
+            not 0 < height <= window_height
+            or height % 2 != 0
+            or self.crop_y + height > window_height
+        ):
+            raise ValueError(
+                "height must be an even number of lines with crop_y + height within "
+                f"the mode's {window_height} line readout window"
+            )
+        self._write_byte(_REG_OUT_HEIGHT, height >> 8)
+        self._write_byte(_REG_OUT_HEIGHT + 1, height & 0xFF)
+
+    @property
+    def crop_x(self):
+        """The X position of the output window within the mode's readout
+        window, in pixels (read back from the sensor, so it reflects any
+        change). Writing offsets the start of the crop: crop_x + `width` must
+        stay within the mode's readout window. The sensor must be in standby
+        to change it."""
+        return (self._read_byte(_REG_OUT_START_X) << 8) | self._read_byte(_REG_OUT_START_X + 1)
+
+    @crop_x.setter
+    def crop_x(self, crop_x):
+        if self._streaming:
+            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        if not 0 <= crop_x or crop_x % 2 != 0 or crop_x + self.width > MODES[self._mode][7]:
+            raise ValueError(
+                "crop_x must be an even number of pixels with crop_x + width within "
+                f"the mode's {MODES[self._mode][7]} pixel readout window"
+            )
+        self._write_byte(_REG_OUT_START_X, crop_x >> 8)
+        self._write_byte(_REG_OUT_START_X + 1, crop_x & 0xFF)
+
+    @property
+    def crop_y(self):
+        """The Y position of the output window within the mode's readout
+        window, in lines (read back from the sensor, so it reflects any
+        change). Writing offsets the start of the crop: crop_y + `height` must
+        stay within the mode's readout window. The sensor must be in standby
+        to change it."""
+        return (self._read_byte(_REG_OUT_START_Y) << 8) | self._read_byte(_REG_OUT_START_Y + 1)
+
+    @crop_y.setter
+    def crop_y(self, crop_y):
+        if self._streaming:
+            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        if not 0 <= crop_y or crop_y % 2 != 0 or crop_y + self.height > MODES[self._mode][8]:
+            raise ValueError(
+                "crop_y must be an even number of lines with crop_y + height within "
+                f"the mode's {MODES[self._mode][8]} line readout window"
+            )
+        self._write_byte(_REG_OUT_START_Y, crop_y >> 8)
+        self._write_byte(_REG_OUT_START_Y + 1, crop_y & 0xFF)
 
     @property
     def frame_rate(self):
