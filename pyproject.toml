@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2022 Alec Delaney, written for Adafruit Industries
+# SPDX-FileCopyrightText: Copyright (c) 2026 Scott Shawcroft for Adafruit Industries
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+requires = [
+    "setuptools",
+    "wheel",
+    "setuptools-scm",
+]
+
+[project]
+name = "adafruit-circuitpython-sc2336"
+description = "Control an SC2336CS camera sensor over I2C"
+version = "0.0.0+auto.0"
+readme = "README.rst"
+authors = [
+    {name = "Adafruit Industries", email = "circuitpython@adafruit.com"}
+]
+urls = {Homepage = "https://github.com/adafruit/Adafruit_CircuitPython_SC2336"}
+keywords = [
+    "adafruit",
+    "camera",
+    "circuitpython",
+    "csi",
+    "image",
+    "mipi",
+    "micropython",
+    "raw",
+    "sc2336",
+    "sensor",
+]
+license = "MIT"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: System :: Hardware",
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools]
+packages = ["adafruit_sc2336"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {optional = {file = ["optional_requirements.txt"]}}
