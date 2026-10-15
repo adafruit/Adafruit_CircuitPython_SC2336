@@ -30,40 +30,20 @@ from adafruit_sc2336 import SC2336, Mode
 # data..., [delay_ms]). Values from the Espressif esp_lcd_ek79007 driver.
 #
 # Note the delay encoding: size byte 0x80 means "no data bytes, delay follows".
-EK79007_INIT = bytes(
-    (
-        0xB2,
-        0x01,
-        0x10,  # PAD_CONTROL: 2 DSI data lanes
-        0x80,
-        0x01,
-        0x8B,  # vendor init
-        0x81,
-        0x01,
-        0x78,
-        0x82,
-        0x01,
-        0x84,
-        0x83,
-        0x01,
-        0x88,
-        0x84,
-        0x01,
-        0xA8,
-        0x85,
-        0x01,
-        0xE3,
-        0x86,
-        0x01,
-        0x88,
-        0x11,
-        0x80,
-        120,  # SLPOUT, delay 120 ms
-        0x29,
-        0x80,
-        20,  # display on, delay 20 ms
-    )
-)
+# fmt: off
+EK79007_INIT = bytes((  # cmd, size|0x80 delay flag, data...
+    0xB2, 0x01, 0x10,  # PAD_CONTROL: 2 DSI data lanes
+    0x80, 0x01, 0x8B,  # vendor init
+    0x81, 0x01, 0x78,
+    0x82, 0x01, 0x84,
+    0x83, 0x01, 0x88,
+    0x84, 0x01, 0xA8,
+    0x85, 0x01, 0xE3,
+    0x86, 0x01, 0x88,
+    0x11, 0x80, 120,  # SLPOUT, delay 120 ms
+    0x29, 0x80, 20,  # display on, delay 20 ms
+))
+# fmt: on
 
 bus = mipidsi.Bus(frequency=1_000_000_000, num_lanes=2)
 mipi_display = mipidsi.Display(
