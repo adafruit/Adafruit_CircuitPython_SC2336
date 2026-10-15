@@ -1,3 +1,12 @@
+Simple test
+-----------
+
+Ensure the sensor is detected and captures frames.
+
+.. literalinclude:: ../examples/sc2336_simpletest.py
+    :caption: examples/sc2336_simpletest.py
+    :linenos:
+
 CSI to DSI direct
 -----------------
 

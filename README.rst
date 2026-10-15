@@ -96,6 +96,21 @@ Or the following command to update an existing version:
 Usage Example
 =============
 
+``examples/sc2336_simpletest.py``: detect the sensor and capture a frame:
+
+.. code-block:: python
+
+    import board
+    import mipicsi
+    import videocore
+    from adafruit_sc2336 import SC2336, Mode
+
+    sensor = SC2336(board.I2C())
+    sensor.mode = Mode.VGA_640x480_RAW10_50FPS
+    camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
+    capture = videocore.VideoBuffer(bytearray(sensor.h_res * sensor.v_res * 2))
+    capture.play(camera)
+
 ``examples/sc2336_csi_to_dsi.py``: stream the camera live into the DSI panel.
 The camera DMA's frames straight into the panel's framebuffer:
 
