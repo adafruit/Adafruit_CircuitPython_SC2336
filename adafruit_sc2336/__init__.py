@@ -415,8 +415,12 @@ class SC2336:
 
     @property
     def test_pattern(self):
-        """Output the sensor's test pattern instead of image data. Useful for
-        checking the signal path independently of the lens and lighting."""
+        """Output the sensor's test pattern instead of image data: a static
+        grayscale gradient (the "incremental pattern"). Useful for checking
+        the signal path independently of the lens and lighting. The sensor's
+        other patterns are monochrome too (a neighboring test bit outputs a
+        flat mid-gray; the color bar bit does nothing), so color processing
+        is checked against a real scene instead."""
         return (self._read_byte(_REG_TEST_PATTERN) & 0x08) != 0
 
     @test_pattern.setter

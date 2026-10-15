@@ -2,20 +2,21 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Bytearray camera capture demo for the ESP32-P4-Function-EV board.
+# Array camera capture demo for the ESP32-P4-Function-EV board.
 #
 # Pipeline:
 #   SC2336 sensor (I2C config, VGA RAW10 @50fps, 2 lanes, output window
 #   trimmed to 320x240)
 #   -> MIPI CSI-2 receiver (mipicsi.Camera) with ISP RAW10 -> RGB565 conversion
-#   -> videocore.VideoBuffer: the camera DMA's frames into a plain bytearray
-#      (no framebuffer involved)
-#   -> displayio renders the bytearray into the panel's framebuffer each time a
+#   -> videocore.VideoBuffer: the camera DMA's frames into an array of 2-byte
+#      pixels (no framebuffer involved)
+#   -> displayio renders the array into the panel's framebuffer each time a
 #      frame lands, alongside other group layers
 #
-# Through a bytearray, capture can be composited with other displayio layers
+# Through an array, capture can be composited with other displayio layers
 # and repositioned freely, at the cost of a copy per frame.
 
+import array
 import time
 
 import board
@@ -106,9 +107,10 @@ sensor.height = 240
 # RGB565 as they are captured, matching the panel's framebuffer format.
 camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
 
-# Capture each frame into a plain bytearray. displayio bulk copies new frames
-# into the display (no color conversion needed with RGB565).
-capture = videocore.VideoBuffer(bytearray(320 * 240 * 2))
+# Capture each frame into an array of 16-bit unsigned pixels (RGB565, two
+# bytes per pixel). displayio bulk copies new frames into the display (no
+# color conversion needed with RGB565).
+capture = videocore.VideoBuffer(array.array("H", (0,) * (320 * 240)))
 capture.play(camera)
 
 # Composite the captured video with other displayio layers. The capture
@@ -121,6 +123,10 @@ capture.y = 180
 display.root_group = root
 
 print(
-    f"Bytearray capture demo running: camera {sensor.width}x{sensor.height} "
+    f"Array capture demo running: camera {sensor.width}x{sensor.height} "
     f"@{sensor.frame_rate} fps captured at {capture.x}, {capture.y}"
 )
+
+# Keep the VM going so the video streams stay live.
+while True:
+    pass

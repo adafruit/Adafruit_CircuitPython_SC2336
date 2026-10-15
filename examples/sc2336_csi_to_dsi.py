@@ -111,3 +111,7 @@ print(
     f"CSI to DSI demo running: camera {sensor.width}x{sensor.height} "
     f"@{sensor.frame_rate} fps, {sensor.lane_bit_rate_mbps} MB/s lane rate"
 )
+
+# Keep the VM going so the video streams stay live.
+while True:
+    pass

@@ -100,6 +100,7 @@ Usage Example
 
 .. code-block:: python
 
+    import array
     import board
     import mipicsi
     import videocore
@@ -108,7 +109,9 @@ Usage Example
     sensor = SC2336(board.I2C())
     sensor.mode = Mode.VGA_640x480_RAW10_50FPS
     camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
-    capture = videocore.VideoBuffer(bytearray(sensor.width * sensor.height * 2))
+    capture = videocore.VideoBuffer(
+        array.array("H", (0,) * (sensor.width * sensor.height))
+    )
     capture.play(camera)
 
 ``examples/sc2336_csi_to_dsi.py``: stream the camera live into the DSI panel.
@@ -127,12 +130,15 @@ The camera DMA's frames straight into the panel's framebuffer:
     video = videocore.VideoBuffer(display)
     video.play(camera)  # camera frames stream live into the panel
 
-``examples/sc2336_capture_bytearray.py``: capture through a bytearray so
-displayio can composite the video with other layers:
+``examples/sc2336_capture_array.py``: capture through an array of 16-bit
+unsigned pixels (RGB565, two bytes per pixel) so displayio can composite the
+video with other layers:
 
 .. code-block:: python
 
-    capture = videocore.VideoBuffer(bytearray(320 * 240 * 2))
+    import array
+
+    capture = videocore.VideoBuffer(array.array("H", (0,) * (320 * 240)))
     capture.play(camera)
     root = displayio.Group()
     root.append(capture)

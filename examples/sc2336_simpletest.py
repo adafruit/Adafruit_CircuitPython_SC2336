@@ -4,6 +4,7 @@
 
 """Ensure your SC2336 works: configure it over I2C and capture a frame."""
 
+import array
 import time
 
 import board
@@ -21,10 +22,11 @@ print(f"  output: {sensor.width}x{sensor.height} @{sensor.frame_rate} fps")
 print(f"  lanes: {sensor.data_lanes}, {sensor.lane_bit_rate_mbps} Mbps")
 print(f"  exposure: {sensor.exposure} lines, gain: {sensor.gain}")
 
-# Capture frames into a plain bytearray so Python can work with the pixels.
+# Capture frames into an array of 16-bit unsigned pixels (RGB565) so Python
+# can work with the pixels.
 camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
 width, height = sensor.width, sensor.height
-buf = bytearray(width * height * 2)
+buf = array.array("H", (0,) * (width * height))
 capture = videocore.VideoBuffer(buf)
 capture.play(camera)
 print(f"Playing, capturing {width}x{height} frames")
@@ -40,8 +42,7 @@ while True:
         for col in range(width // BLOCK_W):
             x = col * BLOCK_W
             y = row * BLOCK_H
-            i = 2 * (x + y * width)  # little-endian RGB565
-            pixel = buf[i] | (buf[i + 1] << 8)
+            pixel = buf[x + y * width]
             r = (pixel >> 11) & 0x1F
             g = (pixel >> 5) & 0x3F
             b = pixel & 0x1F
