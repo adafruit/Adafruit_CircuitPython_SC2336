@@ -210,9 +210,13 @@ class SC2336:
 
     @property
     def bayer_order(self):
-        """The Bayer element order of the sensor's RAW output:
-        0 = BGGR, 1 = GBRG, 2 = GRBG, 3 = RGGB."""
-        return 0
+        """The Bayer element order of the sensor's RAW output (read-only).
+        See `mipicsi.BayerOrder`; the SC2336CS transmits BGGR."""
+        # Imported lazily so the library can be imported on boards and hosts
+        # that lack the mipicsi core module.
+        import mipicsi  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
+
+        return mipicsi.BayerOrder.BGGR
 
     @property
     def width(self):
