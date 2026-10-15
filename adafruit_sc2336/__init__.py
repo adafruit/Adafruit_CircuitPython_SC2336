@@ -147,6 +147,20 @@ class SC2336:
 
         time.sleep(ms / 1000)
 
+    def _cache_window(self):
+        # Cache the output window and crop registers. Called after the mode
+        # table is written.
+        self._width = (self._read_byte(_REG_OUT_WIDTH) << 8) | self._read_byte(_REG_OUT_WIDTH + 1)
+        self._height = (self._read_byte(_REG_OUT_HEIGHT) << 8) | self._read_byte(
+            _REG_OUT_HEIGHT + 1
+        )
+        self._crop_x = (self._read_byte(_REG_OUT_START_X) << 8) | self._read_byte(
+            _REG_OUT_START_X + 1
+        )
+        self._crop_y = (self._read_byte(_REG_OUT_START_Y) << 8) | self._read_byte(
+            _REG_OUT_START_Y + 1
+        )
+
     # --- Mode and stream control -------------------------------------------
 
     @property
@@ -177,9 +191,12 @@ class SC2336:
         # starts (the MIPI PLL needs to lock).
         self._delay_ms(10)
 
-        # Read the frame length to know the exposure limit.
+        # Read the frame length to know the exposure limit, and cache the
+        # window and crop registers: CircuitPython reads width and height off
+        # of the sensor at playback, so they must be cheap and non-I2C.
         vts = (self._read_byte(_REG_TOTAL_HEIGHT) << 8) | self._read_byte(_REG_TOTAL_HEIGHT + 1)
         self._frame_length_lines = vts
+        self._cache_window()
 
     def start(self):
         """Take the sensor out of standby so it streams frames."""
@@ -199,12 +216,12 @@ class SC2336:
 
     @property
     def width(self):
-        """The width of the frames the sensor transmits, in pixels (read back
-        from the sensor's output window, so window changes are reflected).
-        Writing trims the output window of the current mode to this size. It
+        """The width of the frames the sensor transmits, in pixels (cached;
+        it is updated when the window changes). Writing trims the output
+        window of the current mode to this size. It
         must be an even number of pixels and, with `crop_x`, stay within the
         mode's readout window. The sensor must be in standby to change it."""
-        return (self._read_byte(_REG_OUT_WIDTH) << 8) | self._read_byte(_REG_OUT_WIDTH + 1)
+        return self._width
 
     @width.setter
     def width(self, width):
@@ -216,17 +233,18 @@ class SC2336:
                 "width must be an even number of pixels with crop_x + width within "
                 f"the mode's {window_width} pixel readout window"
             )
+        self._width = width
         self._write_byte(_REG_OUT_WIDTH, width >> 8)
         self._write_byte(_REG_OUT_WIDTH + 1, width & 0xFF)
 
     @property
     def height(self):
-        """The height of the frames the sensor transmits, in lines (read back
-        from the sensor's output window, so window changes are reflected).
-        Writing trims the output window of the current mode to this size. It
+        """The height of the frames the sensor transmits, in lines (cached;
+        it is updated when the window changes). Writing trims the output
+        window of the current mode to this size. It
         must be an even number of lines and, with `crop_y`, stay within the
         mode's readout window. The sensor must be in standby to change it."""
-        return (self._read_byte(_REG_OUT_HEIGHT) << 8) | self._read_byte(_REG_OUT_HEIGHT + 1)
+        return self._height
 
     @height.setter
     def height(self, height):
@@ -242,17 +260,18 @@ class SC2336:
                 "height must be an even number of lines with crop_y + height within "
                 f"the mode's {window_height} line readout window"
             )
+        self._height = height
         self._write_byte(_REG_OUT_HEIGHT, height >> 8)
         self._write_byte(_REG_OUT_HEIGHT + 1, height & 0xFF)
 
     @property
     def crop_x(self):
         """The X position of the output window within the mode's readout
-        window, in pixels (read back from the sensor, so it reflects any
-        change). Writing offsets the start of the crop: crop_x + `width` must
+        window, in pixels (cached; it is updated when the crop changes).
+        Writing offsets the start of the crop: crop_x + `width` must
         stay within the mode's readout window. The sensor must be in standby
         to change it."""
-        return (self._read_byte(_REG_OUT_START_X) << 8) | self._read_byte(_REG_OUT_START_X + 1)
+        return self._crop_x
 
     @crop_x.setter
     def crop_x(self, crop_x):
@@ -263,17 +282,18 @@ class SC2336:
                 "crop_x must be an even number of pixels with crop_x + width within "
                 f"the mode's {MODES[self._mode][7]} pixel readout window"
             )
+        self._crop_x = crop_x
         self._write_byte(_REG_OUT_START_X, crop_x >> 8)
         self._write_byte(_REG_OUT_START_X + 1, crop_x & 0xFF)
 
     @property
     def crop_y(self):
         """The Y position of the output window within the mode's readout
-        window, in lines (read back from the sensor, so it reflects any
-        change). Writing offsets the start of the crop: crop_y + `height` must
+        window, in lines (cached; it is updated when the crop changes).
+        Writing offsets the start of the crop: crop_y + `height` must
         stay within the mode's readout window. The sensor must be in standby
         to change it."""
-        return (self._read_byte(_REG_OUT_START_Y) << 8) | self._read_byte(_REG_OUT_START_Y + 1)
+        return self._crop_y
 
     @crop_y.setter
     def crop_y(self, crop_y):
@@ -284,6 +304,7 @@ class SC2336:
                 "crop_y must be an even number of lines with crop_y + height within "
                 f"the mode's {MODES[self._mode][8]} line readout window"
             )
+        self._crop_y = crop_y
         self._write_byte(_REG_OUT_START_Y, crop_y >> 8)
         self._write_byte(_REG_OUT_START_Y + 1, crop_y & 0xFF)
 
