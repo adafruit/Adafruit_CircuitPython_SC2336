@@ -59,6 +59,8 @@ _REG_OUT_START_Y = const(0x3212)  # 2 bytes, output Y start (crop offset)
 _EXPOSURE_MIN = const(0x08)
 _EXPOSURE_MAX_OFFSET_LINES = const(6)
 
+_STREAMING_ERROR = "sensor is streaming; it must be in standby to change the mode or output window"
+
 from .modes import GAIN_REGS, MODES, REG_DELAY, REG_END, TOTAL_GAIN
 
 
@@ -127,6 +129,13 @@ class SC2336:
         mask = ((1 << length) - 1) << offset
         self._write_byte(reg, (reg_data & ~mask) | ((value << offset) & mask))
 
+    def _require_standby(self):
+        # The mipicsi receiver is built around the current mode and window.
+        # Sensors may only reconfigure in standby; the camera stops streaming
+        # (and calls _stop()) when its playback stops.
+        if self._streaming:
+            raise RuntimeError(_STREAMING_ERROR)
+
     def _write_mode(self, regs):
         for reg, value in regs:
             if reg == REG_END:
@@ -175,11 +184,7 @@ class SC2336:
             return
         if mode < 0 or mode >= len(MODES):
             raise ValueError("Invalid mode")
-        if self._streaming:
-            # The mipicsi receiver is built around the current mode. Sensors
-            # may only reconfigure in standby; the camera stops streaming
-            # (and calls stop()) when its playback stops.
-            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        self._require_standby()
 
         # Loading a mode soft resets the sensor, so stop streaming first. The
         # mode table itself leaves the sensor in standby.
@@ -198,13 +203,19 @@ class SC2336:
         self._frame_length_lines = vts
         self._cache_window()
 
-    def start(self):
-        """Take the sensor out of standby so it streams frames."""
-        self.standby = False
+    def _start(self):
+        """Take the sensor out of standby so it streams frames. Only the
+        mipicsi core should call this; it is done by `mipicsi.Camera`."""
+        self._streaming = True
+        # 0 puts the sensor into standby; 1 resumes streaming.
+        self._write_byte(_REG_SLEEP_MODE, 0x01)
 
-    def stop(self):
-        """Put the sensor into standby so it stops streaming."""
-        self.standby = True
+    def _stop(self):
+        """Put the sensor into standby so it stops streaming. Only the
+        mipicsi core should call this; deinitializing `mipicsi.Camera`
+        stops the sensor."""
+        self._streaming = False
+        self._write_byte(_REG_SLEEP_MODE, 0x00)
 
     # --- Info properties -----------------------------------------------------
 
@@ -229,8 +240,7 @@ class SC2336:
 
     @width.setter
     def width(self, width):
-        if self._streaming:
-            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        self._require_standby()
         window_width = MODES[self._mode][7]
         if not 0 < width <= window_width or width % 2 != 0 or self.crop_x + width > window_width:
             raise ValueError(
@@ -252,8 +262,7 @@ class SC2336:
 
     @height.setter
     def height(self, height):
-        if self._streaming:
-            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        self._require_standby()
         window_height = MODES[self._mode][8]
         if (
             not 0 < height <= window_height
@@ -279,8 +288,7 @@ class SC2336:
 
     @crop_x.setter
     def crop_x(self, crop_x):
-        if self._streaming:
-            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        self._require_standby()
         if not 0 <= crop_x or crop_x % 2 != 0 or crop_x + self.width > MODES[self._mode][7]:
             raise ValueError(
                 "crop_x must be an even number of pixels with crop_x + width within "
@@ -301,8 +309,7 @@ class SC2336:
 
     @crop_y.setter
     def crop_y(self, crop_y):
-        if self._streaming:
-            raise RuntimeError("sensor is streaming; stop or standby before changing mode")
+        self._require_standby()
         if not 0 <= crop_y or crop_y % 2 != 0 or crop_y + self.height > MODES[self._mode][8]:
             raise ValueError(
                 "crop_y must be an even number of lines with crop_y + height within "
@@ -418,13 +425,8 @@ class SC2336:
 
     @property
     def standby(self):
-        """True when the sensor is in standby and not streaming. Loading a mode
-        puts the sensor into standby. Creating a `mipicsi.Camera` from the
-        sensor starts it; deinitializing that camera stops it."""
+        """True when the sensor is in standby and not streaming (read-only).
+        Loading a mode puts the sensor into standby. Playing a
+        `mipicsi.Camera` from the sensor starts the sensor; stopping playback
+        stops it; deinitializing the camera puts it back into standby."""
         return not self._streaming
-
-    @standby.setter
-    def standby(self, standby):
-        self._streaming = not standby
-        # 0 puts the sensor into standby; 1 resumes streaming.
-        self._write_byte(_REG_SLEEP_MODE, 0x00 if standby else 0x01)
