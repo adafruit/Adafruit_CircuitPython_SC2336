@@ -96,20 +96,34 @@ Or the following command to update an existing version:
 Usage Example
 =============
 
-``examples/sc2336_simpletest.py``
+``examples/sc2336_csi_to_dsi.py``: stream the camera live into the DSI panel.
+The camera DMA's frames straight into the panel's framebuffer:
 
 .. code-block:: python
 
     import board
     import mipicsi
+    import videocore
     from adafruit_sc2336 import SC2336, Mode
 
-    i2c = board.I2C()
-    sensor = SC2336(i2c)
+    sensor = SC2336(board.I2C())
     sensor.mode = Mode.HD_1280x720_RAW10_30FPS
-    sensor.start()
-    camera = mipicsi.Camera(sensor)
-    # ... capture a frame with the mipicsi core module
+    camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
+    video = videocore.VideoBuffer(display)
+    video.play(camera)  # camera frames stream live into the panel
+
+``examples/sc2336_capture_bytearray.py``: capture through a bytearray so
+displayio can composite the video with other layers:
+
+.. code-block:: python
+
+    capture = videocore.VideoBuffer(bytearray(320 * 240 * 2))
+    capture.play(camera)
+    root = displayio.Group()
+    root.append(capture)
+    display.root_group = root
+
+See the examples themselves for the full EK79007 panel setup.
 
 Documentation
 =============
