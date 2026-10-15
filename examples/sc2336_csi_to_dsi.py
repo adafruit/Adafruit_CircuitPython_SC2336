@@ -93,8 +93,9 @@ display = mipidsi.Display(
 i2c = board.I2C()
 sensor = SC2336(i2c)
 sensor.mode = Mode.HD_1280x720_RAW10_30FPS
-# Trim the sensor's output window to the panel size: the camera DMA's whole
-# frames, so the destination must fit.
+# Trim the sensor's output window: the camera DMA's frames contiguously with
+# no row stride, so the frame's width must match the framebuffer's rows. The
+# height is trimmed to the panel too, so no rows land past the framebuffer.
 sensor.width = 1024
 sensor.height = 600
 
