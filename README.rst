@@ -21,7 +21,7 @@ Introduction
     :target: https://github.com/astral-sh/ruff
     :alt: Code Style: Ruff
 
-Control an SC2336CS camera sensor over I2C
+Control an SC2336CS camera sensor over I2C. This sensor is used with the ESP32-P4 EV Function kit.
 
 
 Dependencies
@@ -108,7 +108,7 @@ Usage Example
     sensor = SC2336(board.I2C())
     sensor.mode = Mode.VGA_640x480_RAW10_50FPS
     camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
-    capture = videocore.VideoBuffer(bytearray(sensor.h_res * sensor.v_res * 2))
+    capture = videocore.VideoBuffer(bytearray(sensor.width * sensor.height * 2))
     capture.play(camera)
 
 ``examples/sc2336_csi_to_dsi.py``: stream the camera live into the DSI panel.

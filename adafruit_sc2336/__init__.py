@@ -194,14 +194,14 @@ class SC2336:
         return 0
 
     @property
-    def h_res(self):
+    def width(self):
         """The width of the frames the sensor transmits, in pixels. Read back
         from the sensor's output window, so window changes are reflected.
         (read-only)"""
         return (self._read_byte(0x3208) << 8) | self._read_byte(0x3209)
 
     @property
-    def v_res(self):
+    def height(self):
         """The height of the frames the sensor transmits, in lines. Read back
         from the sensor's output window, so window changes are reflected.
         (read-only)"""

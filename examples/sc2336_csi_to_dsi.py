@@ -94,7 +94,7 @@ i2c = board.I2C()
 sensor = SC2336(i2c)
 sensor.mode = Mode.HD_1280x720_RAW10_30FPS
 # Trim the sensor's output window to the panel size: the camera DMA's whole
-# frames, so the destination must fit. h_res and v_res read back from this
+# frames, so the destination must fit. width and height read back from this
 # window.
 sensor._write_byte(0x3208, 0x04)
 sensor._write_byte(0x3209, 0x00)  # output width = 1024
@@ -110,6 +110,6 @@ video = videocore.VideoBuffer(display)
 video.play(camera)  # camera frames stream live into the panel
 
 print(
-    f"CSI to DSI demo running: camera {sensor.h_res}x{sensor.v_res} "
+    f"CSI to DSI demo running: camera {sensor.width}x{sensor.height} "
     f"@{sensor.frame_rate} fps, {sensor.lane_bit_rate_mbps} MB/s lane rate"
 )

@@ -98,7 +98,7 @@ display = framebufferio.FramebufferDisplay(fb_display)
 i2c = board.I2C()
 sensor = SC2336(i2c)
 sensor.mode = Mode.VGA_640x480_RAW10_50FPS
-# Trim the sensor's output window to a 320x240 window; h_res and v_res read
+# Trim the sensor's output window to a 320x240 window; width and height read
 # back from this window.
 sensor._write_byte(0x3208, 0x01)
 sensor._write_byte(0x3209, 0x40)  # output width = 320
@@ -124,6 +124,6 @@ capture.y = 180
 display.root_group = root
 
 print(
-    f"Bytearray capture demo running: camera {sensor.h_res}x{sensor.v_res} "
+    f"Bytearray capture demo running: camera {sensor.width}x{sensor.height} "
     f"@{sensor.frame_rate} fps captured at {capture.x}, {capture.y}"
 )

@@ -15,13 +15,13 @@ sensor = SC2336(i2c)
 sensor.mode = Mode.VGA_640x480_RAW10_50FPS
 
 print("SC2336 sensor:")
-print(f"  output: {sensor.h_res}x{sensor.v_res} @{sensor.frame_rate} fps")
+print(f"  output: {sensor.width}x{sensor.height} @{sensor.frame_rate} fps")
 print(f"  lanes: {sensor.data_lanes}, {sensor.lane_bit_rate_mbps} Mbps")
 print(f"  exposure: {sensor.exposure} lines, gain: {sensor.gain}")
 
 # Capture frames into a plain bytearray so Python can work with the pixels.
 camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
-width, height = sensor.h_res, sensor.v_res
+width, height = sensor.width, sensor.height
 capture = videocore.VideoBuffer(bytearray(width * height * 2))
 capture.play(camera)
 print(f"Playing, capturing {width}x{height} frames")
