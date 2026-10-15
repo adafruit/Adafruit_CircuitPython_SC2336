@@ -4,6 +4,8 @@
 
 """Ensure your SC2336 works: configure it over I2C and capture a frame."""
 
+import time
+
 import board
 import mipicsi
 import videocore
@@ -22,6 +24,27 @@ print(f"  exposure: {sensor.exposure} lines, gain: {sensor.gain}")
 # Capture frames into a plain bytearray so Python can work with the pixels.
 camera = mipicsi.Camera(sensor, output_format=mipicsi.PixelFormat.RGB565)
 width, height = sensor.width, sensor.height
-capture = videocore.VideoBuffer(bytearray(width * height * 2))
+buf = bytearray(width * height * 2)
+capture = videocore.VideoBuffer(buf)
 capture.play(camera)
 print(f"Playing, capturing {width}x{height} frames")
+
+# Print the video as UTF-8 brightness blocks on the serial console. Each
+# character is a 16x32 pixel block of the frame (40x15 blocks). Reading the
+# buffer repeatedly shows the moving video and confirms frames land.
+SHADES = " ░▒▓█"
+BLOCK_W, BLOCK_H = 16, 32
+while True:
+    for row in range(height // BLOCK_H):
+        line = ""
+        for col in range(width // BLOCK_W):
+            x = col * BLOCK_W
+            y = row * BLOCK_H
+            i = 2 * (x + y * width)  # little-endian RGB565
+            pixel = buf[i] | (buf[i + 1] << 8)
+            r = (pixel >> 11) & 0x1F
+            g = (pixel >> 5) & 0x3F
+            b = pixel & 0x1F
+            line += SHADES[(2 * r + 5 * g + b) * (len(SHADES) - 1) // (2 * 31 + 5 * 63 + 31)]
+        print(line)
+    time.sleep(1)
